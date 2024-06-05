@@ -1,11 +1,13 @@
-use crate::item::Item;
-
+use chrono::{Datelike, NaiveDateTime};
 use rand::Rng;
 
+use crate::item::Item;
+
+#[allow(dead_code)]
 #[derive(Default)]
 pub struct Order {
     code: u32,
-    items: Vec<Item>,
+    items: Vec<Box<dyn Item>>,
 }
 
 impl Order {
@@ -19,27 +21,23 @@ impl Order {
         }
     }
 
-    pub fn add_item(&mut self, item: Item) {
+    pub fn add_item(&mut self, item: Box<dyn Item>) {
         self.items.push(item);
     }
 
     pub fn get_subtotal(&self) -> f64 {
-        self.items
-            .iter()
-            .fold(0.0, |total, item| total + item.price)
+        self.items.iter().map(|item| item.get_price()).sum::<f64>()
     }
 
-    pub fn get_taxes(&self) -> f64 {
+    pub fn get_taxes(&self, date: chrono::NaiveDateTime) -> f64 {
         self.items
             .iter()
-            .fold(0.0, |taxes, item| match item.category.as_str() {
-                "Cigar" => taxes + (item.price * 0.2),
-                "Beer" => taxes + (item.price * 0.1),
-                _ => taxes,
-            })
+            .filter_map(|item| item.as_tax_item())
+            .map(|taxable_item| taxable_item.calculate_taxes(date))
+            .sum::<f64>()
     }
 
-    pub fn get_total(&self) -> f64 {
-        self.get_subtotal() + self.get_taxes()
+    pub fn get_total(&self, date: NaiveDateTime) -> f64 {
+        self.get_subtotal() + self.get_taxes(date)
     }
 }

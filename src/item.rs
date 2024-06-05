@@ -1,15 +1,14 @@
-pub struct Item {
-    pub category: String,
-    pub description: String,
-    pub price: f64,
+use chrono::NaiveDateTime;
+
+pub trait Item {
+    fn get_description(&self) -> &str;
+    fn get_price(&self) -> f64;
+    fn as_tax_item(&self) -> Option<&dyn TaxItem> {
+        None
+    }
 }
 
-impl Item {
-    pub fn new(category: &str, description: &str, price: f64) -> Item {
-        Item {
-            category: String::from(category),
-            description: String::from(description),
-            price,
-        }
-    }
+pub trait TaxItem: Item {
+    fn calculate_taxes(&self, date: NaiveDateTime) -> f64;
+    fn set_tax_rate(&mut self, rate: f64);
 }
